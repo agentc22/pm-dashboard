@@ -5,375 +5,147 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PM Dashboard</title>
   <style>
-    :root {
-      --bg: #0a0a0f;
-      --card: #12121a;
-      --border: #1e1e2e;
-      --text: #e0e0e0;
-      --muted: #888;
-      --green: #4ade80;
-      --red: #f87171;
-      --blue: #60a5fa;
-      --purple: #a78bfa;
-    }
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, monospace;
-      background: var(--bg);
-      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', monospace;
+      background: #0a0a0f;
+      color: #e0e0e0;
       min-height: 100vh;
       padding: 20px;
     }
-    .container { max-width: 1200px; margin: 0 auto; }
-    header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 30px;
-      padding-bottom: 20px;
-      border-bottom: 1px solid var(--border);
-    }
-    h1 { font-size: 1.5rem; font-weight: 600; }
-    .status { display: flex; align-items: center; gap: 8px; }
-    .status-dot {
-      width: 8px; height: 8px;
-      border-radius: 50%;
-      background: var(--green);
-      animation: pulse 2s infinite;
-    }
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.5; }
-    }
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-      gap: 20px;
+    .container { max-width: 800px; margin: 0 auto; }
+    h1 { font-size: 1.5rem; margin-bottom: 10px; }
+    .wallet {
+      font-family: monospace;
+      font-size: 0.75rem;
+      color: #888;
+      word-break: break-all;
       margin-bottom: 30px;
     }
     .card {
-      background: var(--card);
-      border: 1px solid var(--border);
+      background: #12121a;
+      border: 1px solid #1e1e2e;
       border-radius: 12px;
       padding: 20px;
+      margin-bottom: 20px;
     }
     .card-title {
-      font-size: 0.85rem;
-      color: var(--muted);
+      font-size: 0.8rem;
+      color: #888;
       text-transform: uppercase;
-      letter-spacing: 0.5px;
       margin-bottom: 15px;
     }
     .balance-row {
       display: flex;
       justify-content: space-between;
-      align-items: center;
-      padding: 10px 0;
-      border-bottom: 1px solid var(--border);
+      padding: 12px 0;
+      border-bottom: 1px solid #1e1e2e;
     }
     .balance-row:last-child { border-bottom: none; }
-    .token { display: flex; align-items: center; gap: 10px; }
-    .token-icon {
-      width: 28px; height: 28px;
-      border-radius: 50%;
-      background: var(--border);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 0.8rem;
-    }
-    .amount { font-size: 1.1rem; font-weight: 600; }
-    .usd { color: var(--muted); font-size: 0.85rem; }
-    .total-value {
-      font-size: 2rem;
-      font-weight: 700;
-      color: var(--green);
-      margin-bottom: 5px;
-    }
-    .pnl { font-size: 0.9rem; }
-    .pnl.positive { color: var(--green); }
-    .pnl.negative { color: var(--red); }
-    .position {
-      padding: 12px 0;
-      border-bottom: 1px solid var(--border);
-    }
-    .position:last-child { border-bottom: none; }
-    .position-header {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 8px;
-    }
-    .position-market {
-      font-size: 0.9rem;
-      color: var(--blue);
-      text-decoration: none;
-    }
-    .position-market:hover { text-decoration: underline; }
-    .position-side { font-size: 0.8rem; padding: 2px 8px; border-radius: 4px; }
-    .position-side.yes { background: rgba(74, 222, 128, 0.2); color: var(--green); }
-    .position-side.no { background: rgba(248, 113, 113, 0.2); color: var(--red); }
-    .position-details {
-      display: flex;
-      gap: 20px;
-      font-size: 0.85rem;
-      color: var(--muted);
-    }
-    .activity-item {
-      padding: 10px 0;
-      border-bottom: 1px solid var(--border);
-      font-size: 0.9rem;
-    }
-    .activity-item:last-child { border-bottom: none; }
-    .activity-time { color: var(--muted); font-size: 0.8rem; }
-    .activity-type { color: var(--purple); }
-    .empty { color: var(--muted); font-style: italic; padding: 20px 0; text-align: center; }
-    .refresh-btn {
-      background: var(--border);
+    .amount { font-size: 1.2rem; font-weight: 600; }
+    .usd { color: #888; font-size: 0.85rem; }
+    .total { font-size: 2rem; font-weight: 700; color: #4ade80; }
+    .status { color: #888; font-size: 0.85rem; margin-top: 20px; }
+    .error { color: #f87171; }
+    .loading { color: #60a5fa; }
+    button {
+      background: #1e1e2e;
       border: none;
-      color: var(--text);
+      color: #e0e0e0;
       padding: 8px 16px;
       border-radius: 6px;
       cursor: pointer;
-      font-size: 0.85rem;
+      margin-top: 10px;
     }
-    .refresh-btn:hover { background: #2a2a3a; }
-    .wallet-addr {
-      font-family: monospace;
-      font-size: 0.8rem;
-      color: var(--muted);
-      word-break: break-all;
-    }
-    .copy-btn {
-      background: none;
-      border: none;
-      color: var(--blue);
-      cursor: pointer;
-      font-size: 0.8rem;
-      margin-left: 8px;
-    }
+    button:hover { background: #2a2a3a; }
   </style>
 </head>
 <body>
   <div class="container">
-    <header>
-      <div>
-        <h1>🎰 PM Dashboard</h1>
-        <div class="wallet-addr">
-          <span id="wallet-addr">0x707163889b0f0eFf77db30AA3990aBEa26A525b4</span>
-          <button class="copy-btn" onclick="copyAddr()">copy</button>
-        </div>
-      </div>
-      <div class="status">
-        <div class="status-dot"></div>
-        <span id="last-update">Loading...</span>
-        <button class="refresh-btn" onclick="refresh()">↻ Refresh</button>
-      </div>
-    </header>
+    <h1>🎰 PM Dashboard</h1>
+    <div class="wallet">0x707163889b0f0eFf77db30AA3990aBEa26A525b4</div>
 
-    <div class="grid">
-      <div class="card">
-        <div class="card-title">Portfolio Value</div>
-        <div class="total-value" id="total-value">$0.00</div>
-        <div class="pnl" id="pnl">--</div>
-      </div>
-
-      <div class="card">
-        <div class="card-title">Balances</div>
-        <div id="balances">
-          <div class="balance-row">
-            <div class="token">
-              <div class="token-icon">💵</div>
-              <span>USDC</span>
-            </div>
-            <div>
-              <div class="amount" id="usdc-balance">--</div>
-            </div>
-          </div>
-          <div class="balance-row">
-            <div class="token">
-              <div class="token-icon">⬡</div>
-              <span>POL</span>
-            </div>
-            <div>
-              <div class="amount" id="pol-balance">--</div>
-              <div class="usd" id="pol-usd">--</div>
-            </div>
-          </div>
-        </div>
-      </div>
+    <div class="card">
+      <div class="card-title">Total Value</div>
+      <div class="total" id="total">Loading...</div>
     </div>
 
-    <div class="grid">
-      <div class="card" style="grid-column: span 2;">
-        <div class="card-title">Open Positions</div>
-        <div id="positions">
-          <div class="empty">No positions yet</div>
+    <div class="card">
+      <div class="card-title">Balances</div>
+      <div class="balance-row">
+        <span>💵 USDC</span>
+        <div>
+          <div class="amount" id="usdc">--</div>
+        </div>
+      </div>
+      <div class="balance-row">
+        <span>⬡ POL</span>
+        <div>
+          <div class="amount" id="pol">--</div>
+          <div class="usd" id="pol-usd">--</div>
         </div>
       </div>
     </div>
 
     <div class="card">
-      <div class="card-title">Recent Activity</div>
-      <div id="activity">
-        <div class="empty">No recent activity</div>
-      </div>
+      <div class="card-title">Positions</div>
+      <div id="positions">No positions yet - start trading on Polymarket!</div>
     </div>
+
+    <div class="status" id="status">Loading...</div>
+    <button onclick="refresh()">↻ Refresh</button>
   </div>
 
   <script>
     const WALLET = '0x707163889b0f0eFf77db30AA3990aBEa26A525b4';
-    // Use Ankr public RPC (CORS-friendly)
-    const POLYGON_RPC = 'https://rpc.ankr.com/polygon';
-    const USDC_POLYGON = '0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359';
-    const PM_API = 'https://gamma-api.polymarket.com';
+    const RPC = 'https://rpc.ankr.com/polygon';
+    const USDC = '0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359';
 
-    // ERC20 balanceOf ABI
-    const BALANCE_OF_SIG = '0x70a08231';
-
-    async function getBalances() {
-      try {
-        // Get POL balance
-        const polRes = await fetch(POLYGON_RPC, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            jsonrpc: '2.0',
-            method: 'eth_getBalance',
-            params: [WALLET, 'latest'],
-            id: 1
-          })
-        });
-        const polData = await polRes.json();
-        const polWei = BigInt(polData.result || '0');
-        const pol = Number(polWei) / 1e18;
-
-        // Get USDC balance (6 decimals)
-        const paddedAddr = WALLET.slice(2).toLowerCase().padStart(64, '0');
-        const usdcRes = await fetch(POLYGON_RPC, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            jsonrpc: '2.0',
-            method: 'eth_call',
-            params: [{
-              to: USDC_POLYGON,
-              data: BALANCE_OF_SIG + paddedAddr
-            }, 'latest'],
-            id: 2
-          })
-        });
-        const usdcData = await usdcRes.json();
-        const usdcWei = BigInt(usdcData.result || '0');
-        const usdc = Number(usdcWei) / 1e6;
-
-        return { pol, usdc };
-      } catch (e) {
-        console.error('Balance fetch error:', e);
-        return { pol: 0, usdc: 0 };
-      }
+    function setStatus(msg, isError) {
+      const el = document.getElementById('status');
+      el.textContent = msg;
+      el.className = 'status ' + (isError ? 'error' : 'loading');
     }
 
-    async function getPositions() {
-      try {
-        const res = await fetch(`${PM_API}/positions?user=${WALLET.toLowerCase()}`);
-        if (!res.ok) return [];
-        return await res.json();
-      } catch (e) {
-        console.error('Positions fetch error:', e);
-        return [];
-      }
-    }
-
-    async function getActivity() {
-      try {
-        const res = await fetch(`${PM_API}/activity?user=${WALLET.toLowerCase()}&limit=10`);
-        if (!res.ok) return [];
-        return await res.json();
-      } catch (e) {
-        console.error('Activity fetch error:', e);
-        return [];
-      }
-    }
-
-    function formatUSD(val) {
-      return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(val);
-    }
-
-    function formatNumber(val, decimals = 2) {
-      return new Intl.NumberFormat('en-US', { maximumFractionDigits: decimals }).format(val);
-    }
-
-    function timeAgo(date) {
-      const now = new Date();
-      const diff = Math.floor((now - new Date(date)) / 1000);
-      if (diff < 60) return `${diff}s ago`;
-      if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-      if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
-      return `${Math.floor(diff / 86400)}d ago`;
+    async function rpcCall(method, params) {
+      const res = await fetch(RPC, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ jsonrpc: '2.0', method, params, id: 1 })
+      });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error.message);
+      return data.result;
     }
 
     async function refresh() {
-      document.getElementById('last-update').textContent = 'Updating...';
+      setStatus('Fetching balances...', false);
       
-      const balances = await getBalances();
-      const polPrice = 0.10; // Approximate POL price
-      
-      document.getElementById('usdc-balance').textContent = formatNumber(balances.usdc, 2) + ' USDC';
-      document.getElementById('pol-balance').textContent = formatNumber(balances.pol, 2) + ' POL';
-      document.getElementById('pol-usd').textContent = formatUSD(balances.pol * polPrice);
-      
-      const totalValue = balances.usdc + (balances.pol * polPrice);
-      document.getElementById('total-value').textContent = formatUSD(totalValue);
-      
-      // Positions
-      const positions = await getPositions();
-      const positionsEl = document.getElementById('positions');
-      if (positions.length === 0) {
-        positionsEl.innerHTML = '<div class="empty">No positions yet</div>';
-      } else {
-        positionsEl.innerHTML = positions.map(p => `
-          <div class="position">
-            <div class="position-header">
-              <a class="position-market" href="https://polymarket.com/event/${p.conditionId}" target="_blank">${p.title || p.conditionId.slice(0,12)}...</a>
-              <span class="position-side ${p.outcome === 'Yes' ? 'yes' : 'no'}">${p.outcome}</span>
-            </div>
-            <div class="position-details">
-              <span>Size: ${formatNumber(p.size, 2)}</span>
-              <span>Avg: ${formatNumber(p.avgPrice * 100, 1)}¢</span>
-              <span>P&L: ${formatUSD(p.pnl || 0)}</span>
-            </div>
-          </div>
-        `).join('');
-      }
+      try {
+        // POL balance
+        const polHex = await rpcCall('eth_getBalance', [WALLET, 'latest']);
+        const pol = parseInt(polHex, 16) / 1e18;
+        document.getElementById('pol').textContent = pol.toFixed(4) + ' POL';
+        document.getElementById('pol-usd').textContent = '~$' + (pol * 0.40).toFixed(2);
 
-      // Activity
-      const activity = await getActivity();
-      const activityEl = document.getElementById('activity');
-      if (activity.length === 0) {
-        activityEl.innerHTML = '<div class="empty">No recent activity</div>';
-      } else {
-        activityEl.innerHTML = activity.slice(0, 10).map(a => `
-          <div class="activity-item">
-            <span class="activity-type">${a.type}</span> 
-            ${a.title || a.market || ''} 
-            <span class="activity-time">${timeAgo(a.timestamp)}</span>
-          </div>
-        `).join('');
-      }
+        // USDC balance
+        const addr = WALLET.slice(2).toLowerCase().padStart(64, '0');
+        const usdcHex = await rpcCall('eth_call', [{ to: USDC, data: '0x70a08231' + addr }, 'latest']);
+        const usdc = parseInt(usdcHex, 16) / 1e6;
+        document.getElementById('usdc').textContent = usdc.toFixed(2) + ' USDC';
 
-      document.getElementById('last-update').textContent = 'Updated ' + new Date().toLocaleTimeString();
+        // Total
+        const total = usdc + (pol * 0.40);
+        document.getElementById('total').textContent = '$' + total.toFixed(2);
+
+        setStatus('Updated ' + new Date().toLocaleTimeString(), false);
+      } catch (e) {
+        setStatus('Error: ' + e.message, true);
+        console.error(e);
+      }
     }
 
-    function copyAddr() {
-      navigator.clipboard.writeText(WALLET);
-      document.querySelector('.copy-btn').textContent = 'copied!';
-      setTimeout(() => document.querySelector('.copy-btn').textContent = 'copy', 2000);
-    }
-
-    // Initial load
     refresh();
-    // Auto-refresh every 30 seconds
-    setInterval(refresh, 30000);
   </script>
 </body>
 </html>
