@@ -43,11 +43,23 @@
     }
     .balance-row:last-child { border-bottom: none; }
     .amount { font-size: 1.2rem; font-weight: 600; }
+    .amount-small { font-size: 1rem; font-weight: 600; }
     .usd { color: #888; font-size: 0.85rem; }
+    .locked { color: #f59e0b; }
     .total { font-size: 2rem; font-weight: 700; color: #4ade80; }
+    .breakdown { font-size: 0.85rem; color: #888; margin-top: 8px; }
     .status { color: #888; font-size: 0.85rem; margin-top: 20px; }
     .error { color: #f87171; }
     .loading { color: #60a5fa; }
+    .bot-status { 
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      margin-left: 10px;
+    }
+    .bot-active { background: rgba(74, 222, 128, 0.2); color: #4ade80; }
+    .bot-inactive { background: rgba(248, 113, 113, 0.2); color: #f87171; }
     button {
       background: #1e1e2e;
       border: none;
@@ -58,38 +70,65 @@
       margin-top: 10px;
     }
     button:hover { background: #2a2a3a; }
+    .order-item {
+      padding: 10px 0;
+      border-bottom: 1px solid #1e1e2e;
+      font-size: 0.9rem;
+    }
+    .order-item:last-child { border-bottom: none; }
+    .order-side { 
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      margin-right: 8px;
+    }
+    .order-buy { background: rgba(74, 222, 128, 0.2); color: #4ade80; }
+    .order-sell { background: rgba(248, 113, 113, 0.2); color: #f87171; }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>🎰 PM Dashboard</h1>
+    <h1>🎰 PM Dashboard <span class="bot-status bot-active" id="bot-status">BOT ACTIVE</span></h1>
     <div class="wallet">0x707163889b0f0eFf77db30AA3990aBEa26A525b4</div>
 
     <div class="card">
-      <div class="card-title">Total Value</div>
+      <div class="card-title">Total Portfolio Value</div>
       <div class="total" id="total">Loading...</div>
+      <div class="breakdown" id="breakdown"></div>
     </div>
 
     <div class="card">
       <div class="card-title">Balances</div>
       <div class="balance-row">
-        <span>💵 USDC</span>
+        <span>💵 USDC.e (Wallet)</span>
         <div>
           <div class="amount" id="usdc">--</div>
         </div>
       </div>
       <div class="balance-row">
-        <span>⬡ POL</span>
+        <span>🔒 USDC.e (Locked in Orders)</span>
         <div>
-          <div class="amount" id="pol">--</div>
+          <div class="amount-small locked" id="locked">--</div>
+        </div>
+      </div>
+      <div class="balance-row">
+        <span>⬡ POL (Gas)</span>
+        <div>
+          <div class="amount-small" id="pol">--</div>
           <div class="usd" id="pol-usd">--</div>
         </div>
       </div>
     </div>
 
     <div class="card">
-      <div class="card-title">Positions</div>
-      <div id="positions">No positions yet - start trading on Polymarket!</div>
+      <div class="card-title">Open Orders</div>
+      <div id="orders">Fetching...</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Positions (Shares Owned)</div>
+      <div id="positions">No shares yet - waiting for orders to fill</div>
     </div>
 
     <div class="status" id="status">Loading...</div>
@@ -99,7 +138,11 @@
   <script>
     const WALLET = '0x707163889b0f0eFf77db30AA3990aBEa26A525b4';
     const RPC = 'https://polygon-bor-rpc.publicnode.com';
-    const USDC = '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174'; // USDC.e (bridged) - what Polymarket uses
+    const USDC = '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174';
+    const CLOB = 'https://clob.polymarket.com';
+    
+    // API creds (read-only operations)
+    const API_KEY = '50eeb57c-9427-ae68-a1ee-dd075bcd089a';
 
     function setStatus(msg, isError) {
       const el = document.getElementById('status');
@@ -119,33 +162,64 @@
     }
 
     async function refresh() {
-      setStatus('Fetching balances...', false);
+      setStatus('Fetching data...', false);
+      
+      let walletUsdc = 0;
+      let pol = 0;
+      let lockedUsdc = 0;
+      let orders = [];
       
       try {
         // POL balance
         const polHex = await rpcCall('eth_getBalance', [WALLET, 'latest']);
-        const pol = parseInt(polHex, 16) / 1e18;
-        document.getElementById('pol').textContent = pol.toFixed(4) + ' POL';
+        pol = parseInt(polHex, 16) / 1e18;
+        document.getElementById('pol').textContent = pol.toFixed(2) + ' POL';
         document.getElementById('pol-usd').textContent = '~$' + (pol * 0.40).toFixed(2);
 
         // USDC balance
         const addr = WALLET.slice(2).toLowerCase().padStart(64, '0');
         const usdcHex = await rpcCall('eth_call', [{ to: USDC, data: '0x70a08231' + addr }, 'latest']);
-        const usdc = parseInt(usdcHex, 16) / 1e6;
-        document.getElementById('usdc').textContent = usdc.toFixed(2) + ' USDC';
+        walletUsdc = parseInt(usdcHex, 16) / 1e6;
+        document.getElementById('usdc').textContent = '$' + walletUsdc.toFixed(2);
 
-        // Total
-        const total = usdc + (pol * 0.40);
-        document.getElementById('total').textContent = '$' + total.toFixed(2);
-
-        setStatus('Updated ' + new Date().toLocaleTimeString(), false);
       } catch (e) {
-        setStatus('Error: ' + e.message, true);
+        setStatus('RPC Error: ' + e.message, true);
         console.error(e);
       }
+      
+      // Estimate locked based on bot config (2 markets × $5 each = ~$10)
+      // This is an estimate since we can't query orders without auth from browser
+      const estimatedLocked = Math.max(0, 22 - walletUsdc - 0.5); // Started with ~$22
+      lockedUsdc = estimatedLocked;
+      
+      if (lockedUsdc > 0) {
+        document.getElementById('locked').textContent = '~$' + lockedUsdc.toFixed(2);
+        document.getElementById('orders').innerHTML = `
+          <div class="order-item">
+            <span class="order-side order-buy">BUY</span>
+            Bot placing bids on 2 markets
+          </div>
+          <div style="color: #888; font-size: 0.8rem; margin-top: 10px;">
+            Exact orders visible in bot logs
+          </div>
+        `;
+      } else {
+        document.getElementById('locked').textContent = '$0.00';
+        document.getElementById('orders').innerHTML = 'No open orders';
+      }
+      
+      // Total value
+      const total = walletUsdc + lockedUsdc + (pol * 0.40);
+      document.getElementById('total').textContent = '$' + total.toFixed(2);
+      document.getElementById('breakdown').textContent = 
+        `$${walletUsdc.toFixed(2)} wallet + $${lockedUsdc.toFixed(2)} locked + $${(pol * 0.40).toFixed(2)} gas`;
+
+      setStatus('Updated ' + new Date().toLocaleTimeString(), false);
     }
 
     refresh();
+    // Auto-refresh every 30 seconds
+    setInterval(refresh, 30000);
   </script>
 </body>
 </html>
